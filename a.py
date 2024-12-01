@@ -1,5 +1,7 @@
 from collections import deque
+from functools import partial
 from itertools import accumulate, count, repeat, takewhile
+from multiprocessing import Pool
 from operator import mul, sub
 
 from matplotlib import pyplot as plt
@@ -59,14 +61,21 @@ def animate(frames, autoscale=False, **kwargs):
     return FuncAnimation(fig, update, frames, **kwargs)
 
 if __name__ == '__main__':
-    m, z = 100, int(1e10)
-    n, w0 = 100, 1.5
+    m = 100 # frames
+    n = 100 # pixels
+    k = 10000 # escapes
+    w0 = 1.5 # window size
     x0, y0 = -1, 0
-    x1, y1 = 0, 1
-    xsys = zooms(m, z, n, w0, x0, y0, x1, y1)
-    frames = ((xs, ys, escapes(100, 0, xs, ys))
-              for xs, ys in xsys)
-    frames = iter(tqdm(frames, total=m))
+    x1 = -0.74453986035590838011
+    y1 = 0.12172377389442482241
+    z = int(1e15) # zoom
+    xsys = zooms(m-1, z, n, w0, x0, y0, x1, y1)
+    xsys = list(xsys)
+    with Pool() as p:
+        arrs = p.starmap(partial(escapes, k, 0), tqdm(xsys), chunksize=1)
+    frames = ((xs, ys, arr) for (xs, ys), arr in zip(xsys, arrs))
     ani = animate(frames, autoscale=True,
-                  save_count=m, interval=100)
+                  save_count=m, interval=100,
+                  repeat=True)
+    ani.save('./images/img.png', writer='pillow')
     plt.show()
