@@ -3,7 +3,7 @@ from itertools import accumulate, count, repeat, takewhile
 from operator import mul, sub
 
 from matplotlib import pyplot as plt
-from matplotlib.animation import ArtistAnimation, FuncAnimation
+from matplotlib.animation import FuncAnimation
 import numpy as np
 from tqdm import tqdm
 
@@ -43,29 +43,30 @@ def extent(xs, ys):
     dy = (ys[0] - ys[-1]) / (len(ys) - 1) / 2
     return (xs[0]-dx, xs[-1]+dx, ys[0]-dy, ys[-1]+dy)
 
-def animate(frames):
+def animate(frames, autoscale=False, **kwargs):
     fig, ax = plt.subplots()
-    im = ax.imshow([[]])
+    def init():
+        xs, ys, data = next(frames)
+        im = ax.imshow(data, extent=extent(xs, ys))
+        return im,
+    im, = init()
     def update(frame):
         xs, ys, data = frame
         im.set_data(data)
         im.set_extent(extent(xs, ys))
+        if autoscale: im.autoscale()
         return im,
-    ani = FuncAnimation(
-        fig=fig, func=update, frames=frames,
-        interval=10)
-    plt.show()
+    return FuncAnimation(fig, update, frames, **kwargs)
 
 if __name__ == '__main__':
-    m, z = 100, int(1e18)
-    n, w0 = 200, 1.5
+    m, z = 100, int(1e10)
+    n, w0 = 100, 1.5
     x0, y0 = -1, 0
     x1, y1 = 0, 1
     xsys = zooms(m, z, n, w0, x0, y0, x1, y1)
-    fig, ax = plt.subplots()
-    artists = ([ax.imshow(escapes(200, 0, xs, ys))]
-               for xs, ys in xsys)
-    artists = list(tqdm(artists, total=m+1))
-    ani = ArtistAnimation(fig=fig, artists=artists,
-                          interval=100, repeat=False)
+    frames = ((xs, ys, escapes(100, 0, xs, ys))
+              for xs, ys in xsys)
+    frames = iter(tqdm(frames, total=m))
+    ani = animate(frames, autoscale=True,
+                  save_count=m, interval=100)
     plt.show()
