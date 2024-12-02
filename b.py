@@ -1,5 +1,4 @@
-from functools import reduce
-from itertools import repeat
+from itertools import accumulate, repeat
 from matplotlib import pyplot as plt
 import numpy as np
 import torch
@@ -15,13 +14,13 @@ def escapes(n, z, xs, ys, dtype=torch.complex64):
     cs = [complex(x, y) for y in ys for x in xs]
     cs = torch.tensor(cs, dtype=dtype, device=DEVICE)
     zs = torch.full_like(cs, z, dtype=dtype, device=DEVICE)
-    zs = reduce(step_, repeat(cs, n), zs)
-    zs = zs.abs()
-    return zs.cpu().reshape(len(ys), len(xs))
+    zss = accumulate(repeat(cs, n), step_, initial=zs)
+    ms = sum(zs.abs() < 2 for zs in zss)
+    return ms.cpu().reshape(len(ys), len(xs))
 
 if __name__ == '__main__':
     x, y = -1, 0
-    dw, n = 1.5, 100
+    dw, n = 1.5, 1000
 
     ws = np.linspace(-dw, dw, num=n)
     hp = dw / (n - 1)
@@ -29,6 +28,5 @@ if __name__ == '__main__':
     extent = (xs[0]-hp, xs[-1]+hp, ys[0]-hp, ys[-1]+hp)
 
     arr = escapes(100, 0, xs, ys)
-    print(arr)
     plt.imshow(arr, extent=extent)
     plt.show()
