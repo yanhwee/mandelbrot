@@ -1,7 +1,10 @@
-from itertools import accumulate, repeat
+from functools import partial
+from itertools import accumulate, repeat, starmap
 from matplotlib import pyplot as plt
-import numpy as np
 import torch
+from tqdm import tqdm
+
+from a import animate, zooms
 
 DEVICE = torch.device('mps')
 
@@ -19,14 +22,22 @@ def escapes(n, z, xs, ys, dtype=torch.complex64):
     return ms.cpu().reshape(len(ys), len(xs))
 
 if __name__ == '__main__':
-    x, y = -1, 0
-    dw, n = 1.5, 1000
-
-    ws = np.linspace(-dw, dw, num=n)
-    hp = dw / (n - 1)
-    xs, ys = ws + x, ws + y
-    extent = (xs[0]-hp, xs[-1]+hp, ys[0]-hp, ys[-1]+hp)
-
-    arr = escapes(100, 0, xs, ys)
-    plt.imshow(arr, extent=extent)
+    m = 10 # frames
+    n = 100 # pixels
+    k = 10000 # escapes
+    w0 = 1.5 # window size
+    x0, y0 = -1, 0
+    x1 = -0.74453986035590838011
+    y1 = 0.12172377389442482241
+    # z = int(1e15) # zoom
+    z = int(1e6)
+    xsys = zooms(m-1, z, n, w0, x0, y0, x1, y1)
+    xsys = list(xsys)
+    arrs = starmap(partial(escapes, k, 0), tqdm(xsys))
+    frames = ((xs, ys, arr) for (xs, ys), arr in zip(xsys, arrs))
+    ani = animate(frames, autoscale=True,
+                  save_count=m, interval=1000,
+                  repeat=True)
     plt.show()
+    ani.save('./images/img-gpu.png', writer='pillow')
+    
