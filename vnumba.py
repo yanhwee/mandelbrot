@@ -1,11 +1,11 @@
-import numba
+from numba import njit, prange
 import numpy as np
 
-@numba.njit
+@njit
 def step(z, c):
     return z * z + c
 
-@numba.njit
+@njit
 def escape(n, z, c):
     i = 0
     while abs(z) < 2:
@@ -14,9 +14,19 @@ def escape(n, z, c):
         z = step(z, c)
     return i
 
-@numba.njit
+@njit
 def escapes(n, z, m, ws, cs):
     return [[[escape(n, z, complex(x, y))
               for x in np.linspace(c.real-w, c.real+w, m)]
               for y in np.linspace(c.imag-w, c.imag+w, m)]
               for w, c in zip(ws, cs)]
+
+@njit(parallel=True)
+def escapes_(n, z, m, ws, cs):
+    arr = np.empty((len(ws), m, m))
+    for i in prange(len(ws)):
+        w, c = ws[i], cs[i]
+        for j, y in enumerate(np.linspace(c.imag-w, c.imag+w, m)):
+            for k, x in enumerate(np.linspace(c.real-w, c.real+w, m)):
+                arr[i,j,k] = escape(n, z, complex(x, y))
+    return arr
