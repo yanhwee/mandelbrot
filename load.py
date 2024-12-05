@@ -22,14 +22,14 @@ if __name__ == '__main__':
     l, m, m = arrs.shape
     frames = zip(repeat(m), ws, cs, arrs)
     frames = tqdm(frames, total=l)
-    # frames = map(itemgetter(0), batched(frames, 1024))
-    arrs = map(itemgetter(3), frames)
-    # ani = animate(
-    #     frames, autoscale=True, save_count=l,
-    #     interval=4, repeat=True,
-    #     cache_frame_data=False,
-    #     imshow_kwargs={'norm': 'log', 'cmap': 'magma'})
-    # plt.show()
-    print('Saving as image...')
+    frames = map(itemgetter(0), batched(frames, 8))
+    # arrs = map(itemgetter(3), frames)
+    ani = animate(
+        frames, autoscale=True, save_count=l,
+        interval=4, repeat=True,
+        cache_frame_data=False,
+        imshow_kwargs={'norm': 'log', 'cmap': 'magma'})
+    plt.show()
+    # print('Saving as image...')
     # ani.save('./images/render19.png', writer='pillow')
-    save(arrs, autoscale=True, cmap='magma', norm='log')
+    # save(arrs, autoscale=True, cmap='magma', norm='log')
